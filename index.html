@@ -190,7 +190,7 @@ input{
 
   <h2>Categoria</h2>
   <div id="categorySelector">---</div>
-  <button onclick="sortCategory()">Sortear Categoria</button>
+ 
 
   <div id="questionBox" class="hidden">
     <h3 id="category"></h3>
@@ -458,6 +458,7 @@ function startGame(){
   updateScoreboard();
   screen2.classList.add("hidden");
   screen3.classList.remove("hidden");
+  sortCategory();
 }
 
 function updateScoreboard(){
@@ -473,18 +474,26 @@ function updateScoreboard(){
 
 function sortCategory(){
   questionBox.classList.add("hidden");
-  let i=0;
-  interval=setInterval(()=>{
-    categorySelector.innerText=categories[i%3].toUpperCase();
-    i++;
-  },120);
 
-  setTimeout(()=>{
+  let i = 0;
+  categorySelector.innerText = "";
+
+  // Animação rápida (suspense)
+  interval = setInterval(() => {
+    categorySelector.innerText = categories[i % categories.length].toUpperCase();
+    i++;
+  }, 100);
+
+  // Pausa dramática + revelação
+  setTimeout(() => {
     clearInterval(interval);
-    currentCategory=categories[Math.floor(Math.random()*3)];
-    categorySelector.innerText=currentCategory.toUpperCase();
-    askQuestion();
-  },2000);
+
+    setTimeout(() => {
+      currentCategory = categories[Math.floor(Math.random() * categories.length)];
+      categorySelector.innerText = currentCategory.toUpperCase();
+      askQuestion();
+    }, 400); // suspense extra
+  }, 1800);
 }
 
 function askQuestion(){
@@ -524,4 +533,5 @@ function wrong(){
 
 </body>
 </html>
+
 
