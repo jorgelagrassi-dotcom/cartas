@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta charset="UTF-8">
+<title>Jogo de Perguntas</title>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:#0d0d0d;
+  color:#fff;
+  text-align:center;
+  padding:20px;
+}
+
+.hidden{display:none}
+
+button{
+  padding:12px 24px;
+  margin:10px;
+  font-size:16px;
+  font-weight:bold;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  background:#00e676;
+}
+
+input{
+  padding:8px;
+  font-size:16px;
+}
+
+#selector, #categorySelector{
+  width:340px;
+  height:90px;
+  margin:20px auto;
+  border:4px solid #00e676;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
+  font-weight:bold;
+  background:#000;
+  box-shadow:0 0 20px #00e676;
+}
+
+#scoreboard{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
+.scoreCard{
+  background:#111;
+  border:3px solid #444;
+  border-radius:14px;
+  width:140px;
+  margin:8px;
+  padding:10px;
+}
+
+.scoreCard.leader{
+  border-color:#ffd600;
+  box-shadow:0 0 20px #ffd600;
+  transform:scale(1.08);
+}
+
+.scorePoints{
+  font-size:32px;
+  color:#00e676;
+}
+
+#questionBox{
+  background:#222;
+  padding:20px;
+  border-radius:14px;
+  margin-top:20px;
+}
+
+
+/* ===========================
+   RESPONSIVIDADE MOBILE
+   =========================== */
+
+@media (max-width: 768px) {
+
+  body{
+    padding:10px;
+  }
+
+  h1{
+    font-size:22px;
+  }
+
+  h2{
+    font-size:18px;
+  }
+
+  h3{
+    font-size:16px;
+  }
+
+  button{
+    width:100%;
+    max-width:360px;
+    font-size:18px;
+    padding:14px;
+  }
+
+  input{
+    width:100%;
+    max-width:300px;
+    font-size:16px;
+  }
+
+  #selector,
+  #categorySelector{
+    width:100%;
+    max-width:360px;
+    height:80px;
+    font-size:24px;
+  }
+
+  #scoreboard{
+    flex-direction:row;
+    justify-content:center;
+  }
+
+  .scoreCard{
+    width:45%;
+    margin:6px;
+  }
+
+  .scorePoints{
+    font-size:28px;
+  }
+
+  #questionBox{
+    font-size:18px;
+  }
+
+}
+
+
+
+</style>
+</head>
+
+<body>
+
+<h1>🎲 Jogo de Slogans, Músicas e Ditados</h1>
+
+<!-- TELA 1 -->
+<div id="screen1">
+  <h2>Quantidade de jogadores</h2>
+  <input type="number" id="playerCount" min="1">
+  <br>
+  <button onclick="goNames()">Continuar</button>
+</div>
+
+<!-- TELA 2 -->
+<div id="screen2" class="hidden">
+  <h2>Nomes dos jogadores</h2>
+  <div id="names"></div>
+  <button onclick="startGame()">Iniciar Jogo</button>
+</div>
+
+<!-- TELA 3 -->
+<div id="screen3" class="hidden">
+
+  <h2>🏆 Placar</h2>
+  <div id="scoreboard"></div>
+
+  <h2>🎯 Jogador Atual</h2>
+  <div id="selector">---</div>
+
+  <h2>🎲 Categoria</h2>
+  <div id="categorySelector">---</div>
+  <button onclick="sortCategory()">Sortear Categoria</button>
+
+  <div id="questionBox" class="hidden">
+    <h3 id="category"></h3>
+    <p id="question"></p>
+
+    <button onclick="showAnswer()">Ver Resposta</button>
+    <p id="answer" class="hidden"></p>
+
+    <div id="resultBtns" class="hidden">
+      <button onclick="correct()">✅ Acertou</button>
+      <button onclick="wrong()">❌ Errou</button>
+    </div>
+  </div>
+</div>
+
+<!-- FINAL -->
+<div id="screen4" class="hidden">
+  <h1>🏆 FIM DE JOGO</h1>
+  <h2 id="winner"></h2>
+</div>
+
+<script>
+let players=[], scores=[];
+let currentPlayer=0;
+let interval, currentQuestion, currentCategory;
+
+const categories=["musica","slogan","ditado"];
+
+const questions={
+    musica: [
+    { q: "Eu prefiro ser essa metamorfose ambulante", a: "Raul Seixas" },
+    { q: "Ando devagar porque já tive pressa", a: "Almir Sater" },
+    { q: "É preciso amar as pessoas como se não houvesse amanhã", a: "Legião Urbana" },
+    { q: "O tempo não para", a: "Cazuza" },
+    { q: "Maluco beleza", a: "Raul Seixas" },
+    { q: "Vou deixar a vida me levar", a: "Zeca Pagodinho" },
+    { q: "Toda forma de amor", a: "Lulu Santos" },
+    { q: "Pais e filhos", a: "Legião Urbana" },
+    { q: "Apenas mais uma de amor", a: "Lulu Santos" },
+    { q: "Que país é esse?", a: "Legião Urbana" },
+    { q: "Faroeste Caboclo", a: "Legião Urbana" },
+    { q: "Metamorfose Ambulante", a: "Raul Seixas" },
+    { q: "Meu erro", a: "Paralamas do Sucesso" },
+    { q: "Lanterna dos afogados", a: "Paralamas do Sucesso" },
+    { q: "Exagerado", a: "Cazuza" },
+    { q: "Ideologia", a: "Cazuza" },
+    { q: "Tempo perdido", a: "Legião Urbana" },
+    { q: "Pro dia nascer feliz", a: "Cazuza" },
+    { q: "Ouro de tolo", a: "Raul Seixas" },
+    { q: "Por enquanto", a: "Legião Urbana" },
+    { q: "Toda menina baiana", a: "Gilberto Gil" },
+    { q: "Alegria, alegria", a: "Caetano Veloso" },
+    { q: "Águas de março", a: "Tom Jobim" },
+    { q: "Garota de Ipanema", a: "Tom Jobim" },
+    { q: "País tropical", a: "Jorge Ben Jor" },
+    { q: "Mas que nada", a: "Jorge Ben Jor" },
+    { q: "O bêbado e a equilibrista", a: "João Bosco" },
+    { q: "Como nossos pais", a: "Elis Regina" },
+    { q: "Romaria", a: "Renato Teixeira" },
+    { q: "Asa branca", a: "Luiz Gonzaga" },
+
+{ q: "Xote das meninas", a: "Luiz Gonzaga" },
+{ q: "Eu só quero um xodó", a: "Dominguinhos" },
+{ q: "Anunciação", a: "Alceu Valença" },
+{ q: "La belle de jour", a: "Alceu Valença" },
+{ q: "Morena tropicana", a: "Alceu Valença" },
+{ q: "Chão de giz", a: "Zé Ramalho" },
+{ q: "Avôhai", a: "Zé Ramalho" },
+{ q: "Admirável gado novo", a: "Zé Ramalho" },
+{ q: "Tocando em frente", a: "Almir Sater" },
+{ q: "Evidências", a: "Chitãozinho & Xororó" },
+{ q: "Fio de cabelo", a: "Chitãozinho & Xororó" },
+{ q: "Borbulhas de amor", a: "Fagner" },
+{ q: "Espumas ao vento", a: "Fagner" },
+{ q: "Canteiros", a: "Fagner" },
+{ q: "Sangue latino", a: "Secos & Molhados" },
+{ q: "O vira", a: "Secos & Molhados" },
+{ q: "Rosa de Hiroshima", a: "Secos & Molhados" },
+{ q: "Panis et circensis", a: "Os Mutantes" },
+{ q: "Balada do louco", a: "Os Mutantes" },
+{ q: "Domingo no parque", a: "Gilberto Gil" },
+{ q: "Expresso 2222", a: "Gilberto Gil" },
+{ q: "Você não entende nada", a: "Caetano Veloso" },
+{ q: "Sozinho", a: "Caetano Veloso" },
+{ q: "O que é o que é", a: "Gonzaguinha" },
+{ q: "Explode coração", a: "Gonzaguinha" },
+{ q: "Maria Maria", a: "Milton Nascimento" },
+{ q: "Coração de estudante", a: "Milton Nascimento" },
+{ q: "Travessia", a: "Milton Nascimento" },
+{ q: "Clube da esquina nº2", a: "Milton Nascimento" },
+{ q: "Menina veneno", a: "Ritchie" },
+{ q: "Garçom", a: "Reginaldo Rossi" },
+{ q: "Boate azul", a: "Bruno & Marrone" },
+{ q: "Ainda ontem chorei de saudade", a: "João Mineiro & Marciano" },
+{ q: "Romance", a: "Secos & Molhados" },
+{ q: "Ovelha negra", a: "Rita Lee" },
+{ q: "Mania de você", a: "Rita Lee" }
+
+
+  ],
+
+  slogan: [
+    { q: "Não é só mais um, é um Brastemp", a: "Brastemp" },
+    { q: "Amo muito tudo isso", a: "McDonald's" },
+    { q: "Porque você vale muito", a: "L'Oréal" },
+    { q: "O lado Coca-Cola da vida", a: "Coca-Cola" },
+    { q: "Desce redondo", a: "Skol" },
+    { q: "Não tem comparação", a: "Havaianas" },
+    { q: "Isso muda o jogo", a: "Nike" },
+    { q: "Vem pra Caixa você também", a: "Caixa Econômica" },
+    { q: "Aqui é paixão", a: "Sadía" },
+    { q: "A cerveja que desce redondo", a: "Skol" },
+    { q: "Sempre em forma", a: "Danone" },
+    { q: "Abra a felicidade", a: "Coca-Cola" },
+    { q: "O banco da sua vida", a: "Bradesco" },
+    { q: "Não tem preço", a: "Mastercard" },
+    { q: "Pode confiar", a: "Correios" },
+    { q: "É bom demais", a: "Seara" },
+    { q: "A gente se vê por aqui", a: "Globo" },
+    { q: "Quem pede pede iFood", a: "iFood" },
+    { q: "Feito pra você", a: "Samsung" },
+    { q: "Viver sem fronteiras", a: "LATAM" },
+    { q: "Completo pra você", a: "Itaú" },
+    { q: "O futuro é agora", a: "TIM" },
+    { q: "Simples assim", a: "Oi" },
+    { q: "Mais que um banco", a: "Santander" },
+    { q: "Compartilhe momentos", a: "Nestlé" },
+    { q: "Sua vida pede", a: "Antarctica" },
+    { q: "Energia que transforma", a: "Eletrobras" },
+    { q: "Conectando pessoas", a: "Vivo" },
+    { q: "Lugar de gente feliz", a: "Magazine Luiza" },
+    { q: "Sempre ao seu lado", a: "Banco do Brasil" },
+
+{ q: "Se é Bayer, é bom", a: "Bayer" },
+{ q: "O impossível é nada", a: "Adidas" },
+{ q: "Just do it", a: "Nike" },
+{ q: "É tecnologia que emociona", a: "Sony" },
+{ q: "Pode confiar", a: "Correios" },
+{ q: "A número 1 do Brasil", a: "Brahma" },
+{ q: "É coisa nossa", a: "Petrobras" },
+{ q: "Você pede, a gente leva", a: "Rappi" },
+{ q: "Do seu jeito", a: "Burger King" },
+{ q: "Aqui tem", a: "Casas Bahia" },
+{ q: "Seu mundo, agora", a: "Claro" },
+{ q: "Mais por menos", a: "Extra" },
+{ q: "O banco feito pra você", a: "Itaú" },
+{ q: "Aqui a gente resolve", a: "Banco do Brasil" },
+{ q: "Gente cuidando de gente", a: "Unimed" },
+{ q: "O melhor do Brasil", a: "Globo" },
+{ q: "É mais gostoso", a: "Toddy" },
+{ q: "Um mundo melhor começa em você", a: "Natura" },
+{ q: "Todo dia é dia", a: "Pão de Açúcar" },
+{ q: "A marca do coração", a: "Sadia" },
+{ q: "Mais sabor para sua vida", a: "Knorr" },
+{ q: "Você imagina, a gente faz", a: "Samsung" },
+{ q: "Sempre com você", a: "Vivo" },
+{ q: "Muito além do papel", a: "Suzano" },
+{ q: "O sabor que conquista", a: "Bauducco" },
+{ q: "Pra gente se encontrar", a: "Claro" },
+{ q: "Tudo começa com um sonho", a: "Disney" },
+{ q: "Seu jeito de viver", a: "Porto Seguro" },
+{ q: "Inovação que move", a: "Honda" },
+{ q: "É muito mais", a: "Oi" },
+{ q: "Compartilhe felicidade", a: "Cacau Show" },
+{ q: "Paixão nacional", a: "Guaraná Antarctica" },
+{ q: "Sempre perto de você", a: "Correios" },
+{ q: "Mais que internet", a: "NET" },
+{ q: "Sua casa do seu jeito", a: "Tok&Stok" },
+{ q: "O mundo nas suas mãos", a: "Samsung" },
+{ q: "O carro que você merece", a: "Chevrolet" },
+{ q: "Tecnologia para a vida", a: "LG" }
+
+  ],
+
+  ditado: [
+    { q: "Água mole em pedra dura...", a: "tanto bate até que fura" },
+    { q: "De grão em grão...", a: "a galinha enche o papo" },
+    { q: "Quem não tem cão...", a: "caça com gato" },
+    { q: "Mais vale um pássaro na mão...", a: "do que dois voando" },
+    { q: "Casa de ferreiro...", a: "espeto de pau" },
+    { q: "Deus ajuda...", a: "quem cedo madruga" },
+    { q: "Quem espera...", a: "sempre alcança" },
+    { q: "Antes tarde...", a: "do que nunca" },
+    { q: "Em terra de cego...", a: "quem tem um olho é rei" },
+    { q: "Cavalo dado...", a: "não se olha os dentes" },
+    { q: "A pressa é...", a: "inimiga da perfeição" },
+    { q: "Quem ri por último...", a: "ri melhor" },
+    { q: "O barato sai...", a: "caro" },
+    { q: "Quem tudo quer...", a: "nada tem" },
+    { q: "A união faz...", a: "a força" },
+    { q: "Cada macaco...", a: "no seu galho" },
+    { q: "Filho de peixe...", a: "peixinho é" },
+    { q: "Quem com ferro fere...", a: "com ferro será ferido" },
+    { q: "Não adianta chorar...", a: "sobre o leite derramado" },
+    { q: "Quem vê cara...", a: "não vê coração" },
+    { q: "O silêncio vale...", a: "mais que mil palavras" },
+    { q: "A esperança é a...", a: "última que morre" },
+    { q: "Nem tudo que reluz...", a: "é ouro" },
+    { q: "Quem canta...", a: "seus males espanta" },
+    { q: "Uma andorinha só...", a: "não faz verão" },
+    { q: "Quem não arrisca...", a: "não petisca" },
+    { q: "Depois da tempestade...", a: "vem a bonança" },
+    { q: "O mundo dá voltas", a: "e tudo muda" },
+    { q: "Amigos, amigos...", a: "negócios à parte" },
+    { q: "Quem semeia vento...", a: "colhe tempestade" },
+
+{ q: "Quem não chora...", a: "não mama" },
+{ q: "Quem cala...", a: "consente" },
+{ q: "Quem não deve...", a: "não teme" },
+{ q: "Quem ama...", a: "cuida" },
+{ q: "Quem tem boca...", a: "vai a Roma" },
+{ q: "Quem avisa...", a: "amigo é" },
+{ q: "Quem procura...", a: "acha" },
+{ q: "Quem acredita...", a: "sempre alcança" },
+{ q: "Quem cedo madruga...", a: "Deus ajuda" },
+{ q: "Quem planta...", a: "colhe" },
+{ q: "Quem vive de passado...", a: "é museu" },
+{ q: "Quem não luta...", a: "já perdeu" },
+{ q: "Quem tem fé...", a: "vai longe" },
+{ q: "Quem tudo vê...", a: "nada aprende" },
+{ q: "Quem não sabe...", a: "não ensina" },
+{ q: "Quem quer faz...", a: "quem não quer arruma desculpa" },
+{ q: "Quem não se comunica...", a: "se trumbica" },
+{ q: "Quem não ousa...", a: "não vence" },
+{ q: "Quem tem pressa...", a: "come cru" },
+{ q: "Quem anda com porcos...", a: "farelo come" },
+{ q: "Quem fala o que quer...", a: "ouve o que não quer" },
+{ q: "Quem confia demais...", a: "se engana" },
+{ q: "Quem não compartilha...", a: "não multiplica" },
+{ q: "Quem ama o feio...", a: "bonito lhe parece" },
+{ q: "Quem não agradece...", a: "não merece" },
+{ q: "Quem não respeita...", a: "não é respeitado" },
+{ q: "Quem não aprende com o erro...", a: "repete" },
+{ q: "Quem não sonha...", a: "não realiza" },
+{ q: "Quem não arrisca...", a: "não conquista" },
+{ q: "Quem insiste...", a: "vence" },
+{ q: "Quem se explica demais...", a: "se complica" },
+{ q: "Quem não sabe brincar...", a: "não desce pro play" },
+{ q: "Quem quer vencer...", a: "não dorme" },
+{ q: "Quem é de vidro...", a: "não joga pedra" },
+{ q: "Quem se mistura...", a: "não se perde" },
+{ q: "Quem não se cuida...", a: "se perde" },
+{ q: "Quem tem honra...", a: "tem palavra" },
+{ q: "Quem ama verdadeiramente...", a: "prova" }
+
+  ]
+};
+
+function goNames(){
+  names.innerHTML="";
+  for(let i=0;i<playerCount.value;i++){
+    names.innerHTML+=`<input placeholder="Jogador ${i+1}" id="p${i}"><br>`;
+  }
+  screen1.classList.add("hidden");
+  screen2.classList.remove("hidden");
+}
+
+function startGame(){
+  for(let i=0;i<playerCount.value;i++){
+    players.push(document.getElementById("p"+i).value || "Jogador "+(i+1));
+    scores.push(0);
+  }
+  currentPlayer=Math.floor(Math.random()*players.length);
+  selector.innerText=players[currentPlayer];
+  updateScoreboard();
+  screen2.classList.add("hidden");
+  screen3.classList.remove("hidden");
+}
+
+function updateScoreboard(){
+  scoreboard.innerHTML="";
+  let max=Math.max(...scores);
+  players.forEach((p,i)=>{
+    const div=document.createElement("div");
+    div.className="scoreCard"+(scores[i]===max && max>0?" leader":"");
+    div.innerHTML=`<strong>${p}</strong><div class="scorePoints">${scores[i]}</div>`;
+    scoreboard.appendChild(div);
+  });
+}
+
+function sortCategory(){
+  questionBox.classList.add("hidden");
+  let i=0;
+  interval=setInterval(()=>{
+    categorySelector.innerText=categories[i%3].toUpperCase();
+    i++;
+  },120);
+
+  setTimeout(()=>{
+    clearInterval(interval);
+    currentCategory=categories[Math.floor(Math.random()*3)];
+    categorySelector.innerText=currentCategory.toUpperCase();
+    askQuestion();
+  },2000);
+}
+
+function askQuestion(){
+  const list=questions[currentCategory];
+  currentQuestion=list[Math.floor(Math.random()*list.length)];
+  category.innerText=currentCategory.toUpperCase();
+  question.innerText=currentQuestion.q;
+  answer.innerText="Resposta: "+currentQuestion.a;
+  answer.classList.add("hidden");
+  resultBtns.classList.add("hidden");
+  questionBox.classList.remove("hidden");
+}
+
+function showAnswer(){
+  answer.classList.remove("hidden");
+  resultBtns.classList.remove("hidden");
+}
+
+function correct(){
+  scores[currentPlayer]++;
+  updateScoreboard();
+  if(scores[currentPlayer]>=2){
+    screen3.classList.add("hidden");
+    screen4.classList.remove("hidden");
+    winner.innerText="🎉 Vencedor: "+players[currentPlayer];
+  }else{
+    sortCategory();
+  }
+}
+
+function wrong(){
+  currentPlayer=(currentPlayer+1)%players.length;
+  selector.innerText=players[currentPlayer];
+  sortCategory();
+}
+</script>
+
+</body>
+</html>
